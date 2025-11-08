@@ -1,0 +1,139 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.log
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
+.cache
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+/build
+/.next/
+/out/
+
+# Docker
+*.env.docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.sql.backup
+pgdata/
+postgres_data/
+
+# Data Files
+data/documents/
+data/uploads/
+data/temp/
+data/backups/
+
+# Models & Embeddings (cache)
+models/
+embeddings_cache/
+.sentence-transformers/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+.aws/
+*.pem
+
+# Secrets
+secrets/
+*.key
+*.crt
+*.p12
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Monitoring
+prometheus_data/
+grafana_data/
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Build artifacts
+*.tar
+*.tar.gz
+*.zip
