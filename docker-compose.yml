@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # DATABASES
+  # =============================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: commloan-postgres
+    environment:
+      POSTGRES_DB: commloan_db
+      POSTGRES_USER: commloan_user
+      POSTGRES_PASSWORD: commloan_pass_change_in_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U commloan_user -d commloan_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: commloan-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: commloan-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: commloan-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_change_in_production
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # MICROSERVICES
+  # =============================================================================
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: commloan-auth-service
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://commloan_user:commloan_pass_change_in_production@postgres:5432/commloan_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    container_name: commloan-admin-service
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://commloan_user:commloan_pass_change_in_production@postgres:5432/commloan_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  rag-service:
+    build:
+      context: ./services/rag-service
+      dockerfile: Dockerfile
+    container_name: commloan-rag-service
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://commloan_user:commloan_pass_change_in_production@postgres:5432/commloan_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MONITORING
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: commloan-prometheus
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: commloan-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_change_in_production
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: commloan-network
